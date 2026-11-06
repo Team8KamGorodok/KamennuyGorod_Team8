@@ -1,4 +1,3 @@
-<img width="1023" height="932" alt="image" src="https://github.com/user-attachments/assets/af6a7966-55f9-4842-895d-bb672677dd13" /># KamennuyGorod_Team8
 
 Таскборд: https://pyrus.com/t#id389922073
 
