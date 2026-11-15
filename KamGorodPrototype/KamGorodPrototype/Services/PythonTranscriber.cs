@@ -4,7 +4,9 @@ using System.Text;
 namespace KamGorodPrototype.Services
 {
     /// <summary>
-    /// Запускает transcriber\transcribe.py из виртуального окружения и передаёт его события в форму.
+    /// Запускает распознавание и передаёт его события в форму.
+    /// Готовый пакет для заказчика: transcriber\transcribe\transcribe.exe (Python внутри, собран build.bat).
+    /// Разработка: transcriber\.venv\Scripts\python.exe + transcriber\transcribe.py.
     /// Один запуск = один пакет файлов: модель загружается один раз на весь пакет.
     /// </summary>
     public sealed class PythonTranscriber
@@ -22,19 +24,24 @@ namespace KamGorodPrototype.Services
         public string RepoRoot { get; }
         public string PythonExe => Path.Combine(RepoRoot, "transcriber", ".venv", "Scripts", "python.exe");
         public string ScriptPath => Path.Combine(RepoRoot, "transcriber", "transcribe.py");
+        public string PackagedExe => Path.Combine(RepoRoot, "transcriber", "transcribe", "transcribe.exe");
+
+        /// <summary>true — работаем из собранного пакета (transcribe.exe), false — из исходников.</summary>
+        public bool IsPackaged => File.Exists(PackagedExe);
         public string ModelDir => Path.Combine(RepoRoot, "models", ModelName);
         public string OutputDir => Path.Combine(RepoRoot, "output");
 
         /// <summary>
-        /// Ищет корень репозитория вверх от папки exe (bin\Debug\net10.0-windows):
-        /// первая папка, где лежит transcriber\transcribe.py.
+        /// Ищет корень вверх от папки exe: первая папка, где есть transcriber\transcribe\transcribe.exe
+        /// (пакет — exe лежит прямо в ней) или transcriber\transcribe.py (разработка — bin\Debug\...).
         /// </summary>
         public static string? FindRepoRoot()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);
             while (dir != null)
             {
-                if (File.Exists(Path.Combine(dir.FullName, "transcriber", "transcribe.py")))
+                if (File.Exists(Path.Combine(dir.FullName, "transcriber", "transcribe", "transcribe.exe")) ||
+                    File.Exists(Path.Combine(dir.FullName, "transcriber", "transcribe.py")))
                     return dir.FullName;
                 dir = dir.Parent;
             }
@@ -44,6 +51,13 @@ namespace KamGorodPrototype.Services
         /// <summary>Проверка перед запуском. null — всё на месте, иначе текст для пользователя.</summary>
         public string? CheckSetup()
         {
+            if (IsPackaged)
+            {
+                return Directory.Exists(ModelDir)
+                    ? null
+                    : $"Не найдена модель распознавания:\n{ModelDir}\n\nРаспакуйте архив целиком и запустите программу из распакованной папки.";
+            }
+
             if (!File.Exists(PythonExe))
                 return $"Не найдено окружение Python:\n{PythonExe}\n\nСоздайте его по инструкции transcriber\\README.md.";
             if (!File.Exists(ScriptPath))
@@ -65,7 +79,7 @@ namespace KamGorodPrototype.Services
         {
             Directory.CreateDirectory(OutputDir);
 
-            var psi = new ProcessStartInfo(PythonExe)
+            var psi = new ProcessStartInfo(IsPackaged ? PackagedExe : PythonExe)
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -73,10 +87,11 @@ namespace KamGorodPrototype.Services
                 RedirectStandardError = true,
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8,
-                WorkingDirectory = Path.GetDirectoryName(ScriptPath)!
+                WorkingDirectory = Path.Combine(RepoRoot, "transcriber")
             };
             // ArgumentList сам расставляет кавычки — пробелы и кириллица в путях не ломаются.
-            psi.ArgumentList.Add(ScriptPath);
+            if (!IsPackaged)
+                psi.ArgumentList.Add(ScriptPath);
             psi.ArgumentList.Add("--model");
             psi.ArgumentList.Add(ModelDir);
             psi.ArgumentList.Add("--output-dir");

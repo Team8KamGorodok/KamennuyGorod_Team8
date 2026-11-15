@@ -6,7 +6,10 @@ import time
 import traceback
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+if getattr(sys, "frozen", False):
+    SCRIPT_DIR = Path(sys.executable).resolve().parent.parent
+else:
+    SCRIPT_DIR = Path(__file__).resolve().parent
 PROMPT_FILE = SCRIPT_DIR / "prompt.txt"
 HOTWORDS_FILE = SCRIPT_DIR / "hotwords.txt"
 

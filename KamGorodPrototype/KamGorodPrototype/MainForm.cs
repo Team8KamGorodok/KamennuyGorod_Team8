@@ -38,7 +38,20 @@ namespace KamGorodPrototype{
             };
             listViewFiles.KeyDown += ListViewFiles_KeyDown;
 
+            Shown += MainForm_Shown;
+
             UpdateButtons();
+        }
+
+        private const string UnpackedArchiveMessage =
+            "Не найдены компоненты распознавания (папка transcriber).\n\n" +
+            "Распакуйте архив целиком (правый клик → «Извлечь все») " +
+            "и запустите программу из распакованной папки.";
+
+        private void MainForm_Shown(object? sender, EventArgs e){
+            var setupError = _transcriber is null ? UnpackedArchiveMessage : _transcriber.CheckSetup();
+            if (setupError != null)
+                MessageBox.Show(this, setupError, "Распознавание недоступно", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         private void BtnAddFile_Click(object? sender, EventArgs e){
             var mask = string.Join(";", SupportedExtensions.Select(x => "*" + x));
@@ -138,7 +151,7 @@ namespace KamGorodPrototype{
                 return;
 
             var setupError = _transcriber is null
-                ? "Не найдена папка transcriber с transcribe.py.\nПрограмма ищет её вверх от папки, где лежит exe."
+                ? UnpackedArchiveMessage
                 : _transcriber.CheckSetup();
             if (setupError != null){
                 MessageBox.Show(this, setupError, "Транскрибация недоступна", MessageBoxButtons.OK, MessageBoxIcon.Warning);
