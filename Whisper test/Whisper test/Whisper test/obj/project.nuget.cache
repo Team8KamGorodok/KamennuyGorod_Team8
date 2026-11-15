@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "dgSpecHash": "UO/sybtP7QY=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\saras\\source\\repos\\Whisper test\\Whisper test\\Whisper test.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\saras\\.nuget\\packages\\microsoft.extensions.ai.abstractions\\10.2.0\\microsoft.extensions.ai.abstractions.10.2.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\naudio\\3.3.0\\naudio.3.3.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\naudio.core\\3.3.0\\naudio.core.3.3.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\naudio.midi\\3.3.0\\naudio.midi.3.3.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\naudio.wasapi\\3.3.0\\naudio.wasapi.3.3.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\naudio.winmm\\3.3.0\\naudio.winmm.3.3.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\system.numerics.tensors\\9.0.0\\system.numerics.tensors.9.0.0.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\whisper.net\\1.9.1\\whisper.net.1.9.1.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\whisper.net.runtime\\1.9.1\\whisper.net.runtime.1.9.1.nupkg.sha512",
+    "C:\\Users\\saras\\.nuget\\packages\\whisper.net.runtime.metal\\1.9.1\\whisper.net.runtime.metal.1.9.1.nupkg.sha512"
+  ],
+  "logs": []
+}
