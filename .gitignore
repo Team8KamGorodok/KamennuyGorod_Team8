@@ -1,1 +1,30 @@
-Whisper test/Whisper test/Whisper test/bin/Debug/net10.0/ggml-base.bin
+# ---------- Visual Studio / .NET ----------
+.vs/
+bin/
+obj/
+*.user
+*.suo
+
+# ---------- Python ----------
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ---------- Модели Whisper (скачиваются по transcriber/README.md) ----------
+models/
+
+# ---------- Данные заказчика под NDA: записи и транскрипты ----------
+output/
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.ogg
+*.opus
+*.flac
+*.wma
+*.amr
+*.webm
+*.mp4
+*.mkv
