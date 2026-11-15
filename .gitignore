@@ -28,3 +28,7 @@ output/
 *.webm
 *.mp4
 *.mkv
+
+# ---------- Сборка пакета (build.bat) ----------
+dist/
+build/
