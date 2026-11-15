@@ -1,6 +1,7 @@
 
 Таскборд: https://pyrus.com/t#id389922073
 
+
 Ссылки на таблицы:
 
 Бриф проекта: https://docs.google.com/spreadsheets/d/1ygIUpZNdwX3IbgnqX8DUs1cPaloM4JwEKjqt1FWCGLQ/edit?gid=1484469263#gid=1484469263
