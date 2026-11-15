@@ -6,6 +6,10 @@ import time
 import traceback
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROMPT_FILE = SCRIPT_DIR / "prompt.txt"
+HOTWORDS_FILE = SCRIPT_DIR / "hotwords.txt"
+
 def setup_output() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -46,9 +50,29 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--language", default="ru", help="код языка или auto")
     p.add_argument("--initial-prompt", default=None, help="подсказка: термины, названия курсов")
     p.add_argument("--hotwords", default=None, help="слова, которые модель должна узнавать")
-    p.add_argument("--vad", action="store_true", help="пропускать тишину (фильтр VAD)")
+    p.add_argument("--no-prompt", action="store_true",
+                   help="не использовать подсказку и hotwords (для сравнения качества)")
+    p.add_argument("--no-vad", action="store_true", help="не вырезать тишину (фильтр VAD включён по умолчанию)")
     p.add_argument("--beam-size", type=int, default=5)
     return p.parse_args()
+
+def read_text_file(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    text = " ".join(path.read_text(encoding="utf-8-sig").split())
+    return text or None
+
+
+def resolve_prompt(args) -> None:
+    if args.no_prompt:
+        args.initial_prompt = None
+        args.hotwords = None
+        return
+    if args.initial_prompt is None:
+        args.initial_prompt = read_text_file(PROMPT_FILE)
+    if args.hotwords is None:
+        args.hotwords = read_text_file(HOTWORDS_FILE)
+
 
 def fmt_time(seconds: float) -> str:
     total = int(seconds)
@@ -80,7 +104,7 @@ def transcribe_file(model, path: Path, args, out_dir: Path, used_names: set, mod
         language=language,
         initial_prompt=args.initial_prompt or None,
         hotwords=args.hotwords or None,
-        vad_filter=args.vad,
+        vad_filter=not args.no_vad,
         beam_size=args.beam_size,
     )
     duration = float(info.duration or 0)
@@ -114,6 +138,9 @@ def transcribe_file(model, path: Path, args, out_dir: Path, used_names: set, mod
         "language": info.language,
         "duration": round(duration, 2),
         "processing_seconds": round(processing, 2),
+        "initial_prompt": args.initial_prompt,
+        "hotwords": args.hotwords,
+        "vad": not args.no_vad,
         "segments": segments,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -132,6 +159,7 @@ def transcribe_file(model, path: Path, args, out_dir: Path, used_names: set, mod
 def main() -> int:
     setup_output()
     args = parse_args()
+    resolve_prompt(args)
 
     if args.compute_type is None:
         args.compute_type = "float16" if args.device == "cuda" else "int8"
@@ -156,7 +184,10 @@ def main() -> int:
              model=model_dir.name,
              device=args.device,
              compute_type=args.compute_type,
-             seconds=round(time.perf_counter() - t0, 2))
+             seconds=round(time.perf_counter() - t0, 2),
+             initial_prompt=args.initial_prompt,
+             hotwords=args.hotwords,
+             vad=not args.no_vad)
     except Exception as e: 
         log(traceback.format_exc())
         hint = " (проверьте библиотеки CUDA или запустите с --device cpu)" if args.device == "cuda" else ""
