@@ -16,6 +16,13 @@ namespace KamGorodPrototype{
 
         private bool IsRunning => _cts != null;
 
+        private readonly ToolStripComboBox _comboModel = new(){
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Size = new Size(110, 25)
+        };
+
+        private string SelectedModel => _comboModel.SelectedItem as string ?? PythonTranscriber.DefaultModel;
+
         public MainForm(){
             InitializeComponent();
 
@@ -40,6 +47,8 @@ namespace KamGorodPrototype{
 
             Shown += MainForm_Shown;
 
+            InitModelSelector();
+
             UpdateButtons();
         }
 
@@ -47,6 +56,23 @@ namespace KamGorodPrototype{
             "Не найдены компоненты распознавания (папка transcriber).\n\n" +
             "Распакуйте архив целиком (правый клик → «Извлечь все») " +
             "и запустите программу из распакованной папки.";
+
+        private void InitModelSelector(){
+            toolStripMain.Items.Add(new ToolStripSeparator());
+            toolStripMain.Items.Add(new ToolStripLabel("Модель:"));
+            toolStripMain.Items.Add(_comboModel);
+
+            var models = _transcriber?.FindModels() ?? Array.Empty<string>();
+            foreach (var model in models)
+                _comboModel.Items.Add(model);
+
+            if (_comboModel.Items.Count > 0){
+                var index = _comboModel.Items.IndexOf(PythonTranscriber.DefaultModel);
+                _comboModel.SelectedIndex = index >= 0 ? index : 0;
+            }
+
+            _comboModel.SelectedIndexChanged += (_, _) => UpdateButtons();
+        }
 
         private void MainForm_Shown(object? sender, EventArgs e){
             var setupError = _transcriber is null ? UnpackedArchiveMessage : _transcriber.CheckSetup();
@@ -158,7 +184,8 @@ namespace KamGorodPrototype{
                 return;
             }
 
-            var batch = _files.Where(f => f.CanRun).ToList();
+            var model = SelectedModel;
+            var batch = _files.Where(f => f.CanRunWith(model)).ToList();
             if (batch.Count == 0)
                 return;
 
@@ -177,7 +204,8 @@ namespace KamGorodPrototype{
             try{
                 await _transcriber!.RunAsync(
                     batch.Select(f => f.FilePath).ToList(),
-                    ev => ApplyEvent(ev, byPath, batch),
+                    model,
+                    ev => ApplyEvent(ev, byPath, batch, model),
                     _cts.Token);
             }
             catch (OperationCanceledException){
@@ -203,7 +231,7 @@ namespace KamGorodPrototype{
             }
         }
 
-        private void ApplyEvent(TranscriptionEvent ev, Dictionary<string, AudioFileItem> byPath, List<AudioFileItem> batch){
+        private void ApplyEvent(TranscriptionEvent ev, Dictionary<string, AudioFileItem> byPath, List<AudioFileItem> batch, string model){
             if (ev.Event == "model_error"){
                 foreach (var queued in batch.Where(f => f.Status is FileStatus.Queued or FileStatus.Processing)){
                     queued.Status = FileStatus.Error;
@@ -231,6 +259,7 @@ namespace KamGorodPrototype{
                     item.Progress = 100;
                     item.Duration = TimeSpan.FromSeconds(ev.Duration);
                     item.ProcessingSeconds = ev.Processing;
+                    item.Model = model;
                     item.TxtPath = ev.Txt;
                     item.JsonPath = ev.Json;
                     break;
@@ -311,6 +340,8 @@ namespace KamGorodPrototype{
             switch (item.Status){
                 case FileStatus.Done:
                     var title = item.FileName;
+                    if (item.Model != null)
+                        title += " · " + item.Model;
                     if (item.Duration is { } duration)
                         title += " · " + FormatDuration(duration);
                     if (item.ProcessingSeconds is { } seconds)
@@ -380,7 +411,8 @@ namespace KamGorodPrototype{
             var running = IsRunning;
             btnAddFile.Enabled = !running;
             btnRemove.Enabled = !running && listViewFiles.SelectedItems.Count > 0;
-            btnRun.Enabled = !running && _files.Any(f => f.CanRun);
+            btnRun.Enabled = !running && _comboModel.Items.Count > 0 && _files.Any(f => f.CanRunWith(SelectedModel));
+            _comboModel.Enabled = !running && _comboModel.Items.Count > 0;
             listViewFiles.AllowDrop = !running;
         }
 

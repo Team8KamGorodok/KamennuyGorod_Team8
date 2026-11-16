@@ -11,8 +11,8 @@ namespace KamGorodPrototype.Services
     /// </summary>
     public sealed class PythonTranscriber
     {
-        /// <summary>Модель из папки models\. Выбор модели в интерфейсе — позже.</summary>
-        public const string ModelName = "small";
+        /// <summary>Модель, выбранная по умолчанию, если она есть в папке models\.</summary>
+        public const string DefaultModel = "small";
 
         public PythonTranscriber(string repoRoot)
         {
@@ -28,8 +28,27 @@ namespace KamGorodPrototype.Services
 
         /// <summary>true — работаем из собранного пакета (transcribe.exe), false — из исходников.</summary>
         public bool IsPackaged => File.Exists(PackagedExe);
-        public string ModelDir => Path.Combine(RepoRoot, "models", ModelName);
+        public string ModelsRoot => Path.Combine(RepoRoot, "models");
         public string OutputDir => Path.Combine(RepoRoot, "output");
+
+        public string ModelDir(string model) => Path.Combine(ModelsRoot, model);
+
+        /// <summary>Результаты каждой модели — в своей папке: output\small, output\medium.</summary>
+        public string OutputDirFor(string model) => Path.Combine(OutputDir, model);
+
+        /// <summary>Модели в папке models\: подпапки с model.bin, от меньшей к большей (small, medium…).</summary>
+        public IReadOnlyList<string> FindModels()
+        {
+            if (!Directory.Exists(ModelsRoot))
+                return Array.Empty<string>();
+
+            return new DirectoryInfo(ModelsRoot).GetDirectories()
+                .Select(d => new FileInfo(Path.Combine(d.FullName, "model.bin")))
+                .Where(f => f.Exists)
+                .OrderBy(f => f.Length)
+                .Select(f => f.Directory!.Name)
+                .ToList();
+        }
 
         /// <summary>
         /// Ищет корень вверх от папки exe: первая папка, где есть transcriber\transcribe\transcribe.exe
@@ -53,17 +72,17 @@ namespace KamGorodPrototype.Services
         {
             if (IsPackaged)
             {
-                return Directory.Exists(ModelDir)
+                return FindModels().Count > 0
                     ? null
-                    : $"Не найдена модель распознавания:\n{ModelDir}\n\nРаспакуйте архив целиком и запустите программу из распакованной папки.";
+                    : $"Не найдена модель распознавания:\n{ModelsRoot}\n\nРаспакуйте архив целиком и запустите программу из распакованной папки.";
             }
 
             if (!File.Exists(PythonExe))
                 return $"Не найдено окружение Python:\n{PythonExe}\n\nСоздайте его по инструкции transcriber\\README.md.";
             if (!File.Exists(ScriptPath))
                 return $"Не найден скрипт:\n{ScriptPath}";
-            if (!Directory.Exists(ModelDir))
-                return $"Не найдена модель «{ModelName}»:\n{ModelDir}\n\nСкачайте её по инструкции transcriber\\README.md.";
+            if (FindModels().Count == 0)
+                return $"Не найдено ни одной модели в папке:\n{ModelsRoot}\n\nСкачайте модель, например: hf download Systran/faster-whisper-small --local-dir models\\small";
             return null;
         }
 
@@ -75,9 +94,10 @@ namespace KamGorodPrototype.Services
         /// Отмена через ct завершает процесс Python.
         /// Если Python завершился без batch_done — исключение с концом его stderr.
         /// </summary>
-        public async Task RunAsync(IReadOnlyList<string> files, Action<TranscriptionEvent> onEvent, CancellationToken ct)
+        public async Task RunAsync(IReadOnlyList<string> files, string model, Action<TranscriptionEvent> onEvent, CancellationToken ct)
         {
-            Directory.CreateDirectory(OutputDir);
+            var outputDir = OutputDirFor(model);
+            Directory.CreateDirectory(outputDir);
 
             var psi = new ProcessStartInfo(IsPackaged ? PackagedExe : PythonExe)
             {
@@ -93,9 +113,9 @@ namespace KamGorodPrototype.Services
             if (!IsPackaged)
                 psi.ArgumentList.Add(ScriptPath);
             psi.ArgumentList.Add("--model");
-            psi.ArgumentList.Add(ModelDir);
+            psi.ArgumentList.Add(ModelDir(model));
             psi.ArgumentList.Add("--output-dir");
-            psi.ArgumentList.Add(OutputDir);
+            psi.ArgumentList.Add(outputDir);
             foreach (var file in files)
                 psi.ArgumentList.Add(file);
 
