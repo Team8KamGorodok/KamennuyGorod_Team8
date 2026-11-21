@@ -6,17 +6,22 @@ rem Подготовка проекта после клонирования: о�
 rem Запуск: setup.bat            — модели small и medium
 rem         setup.bat small      — только small (быстрее, ~0.5 ГБ)
 rem Повторный запуск безопасен: то, что уже есть, пропускается.
-rem Нужно: Python 3.10–3.12 и интернет.
+rem Нужно: 64-битный Python 3.10–3.12 и интернет. Python 3.13+ не подходит: под него нет нужных пакетов (onnxruntime).
 
 set "ROOT=%~dp0"
 set "VENV=%ROOT%transcriber\.venv"
 set "PY=%VENV%\Scripts\python.exe"
 set "MODELS=%*"
+set "PYCHECK=import sys, struct; sys.exit(0 if (3, 10) <= sys.version_info[:2] <= (3, 12) and struct.calcsize('P') == 8 else 1)"
 if "%MODELS%"=="" set "MODELS=small medium"
 
 echo.
 echo === 1/3 Окружение Python (transcriber\.venv) ===
-if exist "%PY%" goto venv_ok
+if not exist "%PY%" goto venv_create
+"%PY%" -c "%PYCHECK%" >nul 2>&1 && goto venv_ok
+echo   окружение создано неподходящей версией Python — пересоздаю
+rmdir /s /q "%VENV%" || goto fail
+:venv_create
 call :find_python || goto fail
 echo   создаю окружение через: %BASEPY%
 %BASEPY% -m venv "%VENV%" || goto fail
@@ -43,9 +48,12 @@ endlocal
 exit /b 0
 
 :find_python
-py -3.12 -c "import sys" >nul 2>&1 && (set "BASEPY=py -3.12" & exit /b 0)
-python -c "import sys; sys.exit(0 if sys.version_info[:2] >= (3, 10) else 1)" >nul 2>&1 && (set "BASEPY=python" & exit /b 0)
-echo [ОШИБКА] Не найден Python 3.10–3.12. Установите: winget install Python.Python.3.12
+for %%V in (3.12 3.11 3.10) do (
+    py -%%V-64 -c "%PYCHECK%" >nul 2>&1 && (set "BASEPY=py -%%V-64" & exit /b 0)
+)
+python -c "%PYCHECK%" >nul 2>&1 && (set "BASEPY=python" & exit /b 0)
+echo [ОШИБКА] Не найден 64-битный Python 3.10–3.12. Более новые версии не подходят.
+echo          Установите: winget install Python.Python.3.12 и откройте консоль заново.
 exit /b 1
 
 :get_model
