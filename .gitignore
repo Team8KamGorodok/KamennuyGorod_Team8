@@ -11,11 +11,13 @@ venv/
 __pycache__/
 *.pyc
 
+# Пути с / в начале — только в корне репозитория. Без него Windows (регистр не важен)
+# считал бы models/ совпадающим с папкой кода KamGorodPrototype\Models.
 # ---------- Модели Whisper (скачиваются по transcriber/README.md) ----------
-models/
+/models/
 
 # ---------- Данные заказчика под NDA: записи и транскрипты ----------
-output/
+/output/
 *.mp3
 *.wav
 *.m4a
@@ -30,5 +32,5 @@ output/
 *.mkv
 
 # ---------- Сборка пакета (build.bat) ----------
-dist/
-build/
+/dist/
+/build/
