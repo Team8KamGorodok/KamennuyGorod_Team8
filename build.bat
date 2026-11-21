@@ -4,8 +4,9 @@ setlocal
 
 rem Сборка пакета для заказчика: dist\Prototype.zip
 rem Заказчик распаковывает архив и запускает KamGorodPrototype.exe. Ничего ставить не нужно.
-rem Нужно на ПК разработчика: .NET SDK, transcriber\.venv с зависимостями, модели в models\ (small, medium...),
-rem интернет (один раз для PyInstaller). В пакет попадают все модели из models\, где есть model.bin.
+rem Нужно на ПК разработчика: .NET SDK, Python 3.10–3.12, интернет (при первом запуске).
+rem Окружение Python и модели подготавливает setup.bat — build.bat вызывает его сам.
+rem В пакет попадают все модели из models\, где есть model.bin.
 
 set "ROOT=%~dp0"
 set "PY=%ROOT%transcriber\.venv\Scripts\python.exe"
@@ -13,10 +14,9 @@ set "DIST=%ROOT%dist"
 set "PKG=%DIST%\Prototype"
 set "WORK=%ROOT%build"
 
-if not exist "%PY%" (
-    echo [ОШИБКА] Нет окружения Python: %PY%
-    goto fail
-)
+rem Окружение Python, зависимости и модели: создаются или докачиваются, если их нет.
+call "%ROOT%setup.bat" || goto fail
+
 set "HASMODEL="
 for /d %%M in ("%ROOT%models\*") do if exist "%%M\model.bin" set "HASMODEL=1"
 if not defined HASMODEL (

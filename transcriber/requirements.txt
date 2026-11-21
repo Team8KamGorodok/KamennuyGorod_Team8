@@ -1,0 +1,10 @@
+# Локальная транскрибация. Версии проверены на Windows 11, Python 3.12, CPU (int8).
+faster-whisper==1.2.1
+ctranslate2==4.9.0
+
+# PyAV (декодирование аудио внутри faster-whisper). Версии 17+ убрали параметр metadata_errors,
+# который передаёт faster-whisper 1.2.1, — файлы перестают открываться. Не обновлять без проверки.
+av==16.1.0
+
+# Только для работы на видеокарте NVIDIA (--device cuda). Для CPU не нужны.
+# pip install nvidia-cublas-cu12 nvidia-cudnn-cu12==9.*
