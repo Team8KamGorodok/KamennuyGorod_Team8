@@ -12,6 +12,8 @@
 
 Сценарий взаимодействия: https://docs.google.com/document/d/1L-oTSI2mo2hipXRDRX6eyLuaJfALcmcRDtrONfB3p7o/edit?usp=sharing
 
+Скоуп MVP: https://docs.google.com/spreadsheets/d/1JhLmHSWKE5zUIGD7dbCbm1TWv5vitaEL9o8hfS_LG6g/edit?gid=1200656113#gid=1200656113
+
 
 Архитектура:
 <img width="1288" height="948" alt="image" src="https://github.com/user-attachments/assets/78862270-6269-4c1b-8f60-590844d1fbe7" />
